@@ -1,22 +1,19 @@
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
-    sequelize.define('movie', {
-        title: {
+    sequelize.define('film', {
+        tittle: {
             type: DataTypes.STRING,
             allowNull: false
         },
-        createdAt: {
-            type: DataTypes.INTEGER
+        dateOfCreation: {
+            type: DataTypes.DATEONLY
         },
         rating: {
             type: DataTypes.FLOAT
         },
         image: {
             type: DataTypes.STRING
-        },
-        isSeries: {
-            type: DataTypes.BOOLEAN
         }
     });
 };

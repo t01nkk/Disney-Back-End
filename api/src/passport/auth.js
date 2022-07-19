@@ -5,10 +5,11 @@ const bcrypt = require('bcrypt');
 
 passport.use(new LocalStrategy(
     async (username, password, done) => {
+        console.log('meow')
         try {
             const user = await User.findOne({ where: { email: username } });
-            if (!user) { return done(null, false); }
-            if (!bcrypt.compare(password, user.password)) { return done(null, false); }
+            if (!user) { return done(null, false, { message: 'No user with this email' }); }
+            if (!bcrypt.compare(password, user.password)) return done(null, false, { message: 'Pasword incorrect' });
             return done(null, user);
         } catch (err) {
             done(err)

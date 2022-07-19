@@ -7,7 +7,7 @@ const Auth = require('./authRoutes');
 
 router.use('/characters', Character);
 router.use('/genres', Genre);
-router.use('/auth', Auth);
+router.use('/user', Auth);
 router.use('/movies', Movie);
 
 

@@ -25,13 +25,13 @@ let entries = Object.entries(sequelize.models);
 let capsEntries = entries.map((entry) => [entry[0][0].toUpperCase() + entry[0].slice(1), entry[1]]);
 sequelize.models = Object.fromEntries(capsEntries);
 
-const { Character, Movie, Genre, User } = sequelize.models;
+const { Character, Film, Genre, User } = sequelize.models;
 
-Character.belongsToMany(Movie, { through: 'movieCharacter' });
-Movie.belongsToMany(Character, { through: 'movieCharacter' });
+Character.belongsToMany(Film, { through: 'movieCharacter' });
+Film.belongsToMany(Character, { through: 'movieCharacter' });
 
-Movie.belongsToMany(Genre, { through: 'movieGenre' });
-Genre.belongsToMany(Movie, { through: 'movieGenre' });
+Film.belongsToMany(Genre, { through: 'movieGenre' });
+Genre.belongsToMany(Film, { through: 'movieGenre' });
 
 module.exports = {
   ...sequelize.models,

@@ -1,65 +1,62 @@
 const { Router } = require('express');
 const router = Router();
 const passport = require('passport');
-const { auth, genPassword } = require('../passport/passwordUtils')
+const { notAuth, auth, genPassword, validatePassword } = require('../passport/passwordUtils')
+const { validateEmail } = require('../Middlewares/middleware');
 const { User } = require('../db');
-/*-----------------------------------------------*/
-/*-------------.... Ruotes....-------------------*/
 
+// router.get('/register', async (req, res) => {
 
-router.get('/', (req, res, next) => {
-    res.status(200).send('<h1>Home</h1><p>Please <a href="/SignIn">register</a></p>');
-})
-router.get('/SignIn', (req, res, next) => {
-    const form = '<h1>Register Page</h1><form method="post" action="/SignIn">\
-                    Enter Username:<br><input type="text" name="username">\
-                    <br>Enter Password:<br><input type="password" name="password">\
-                    <br><br><input type="submit" value="Submit"></form>';
-
-    res.send(form)
-})
-
-router.post('/SignIn', async (req, res, next) => {
-    const { username, user, name, password } = req.body;
-    try {
-        const userExist = await User.findOne({ where: { email: username } });
-        if (!userExist) {
-            await User.create({ email: username, user: user, name: name, password: genPassword(password) })
-            res.redirect('/Profile/auth')
-        } else {
-            res.status(401).send('Username is already taken');
-        }
-    } catch (err) {
-        next(err)
-    }
-});
-// router.get('/Profile/auth', auth, (req, res, next) => {
-
-//     res.send('<h1>You are authenticated</h1><p><a href="/logout">Logout and reload</a></p>');
 // })
 
+router.post('/register', async (req, res) => {
+    try {
+        const { password, email } = req.body;
+        if (!validateEmail(email)) return res.status(404).send('Invalid email format');
+        if (!validatePassword(password)) return res.status(400).send({ msg: 'Invalid password format (4-8 char, 1 upperCase, 1 number)' })
+        const hashPass = genPassword(password)
+        await User.create({
+            email: email,
+            password: hashPass
+        })
+        res.send({ msg: 'User registered successfully' })
+    } catch (err) {
+        console.log('Here be error: ', err.message)
+        res.send({ msg: err.message })
+    }
+})
+
 router.post('/login', passport.authenticate('local', {
-    failureRedirect: '/login',
-    successRedirect: '/Profile/auth'
+    failureRedirect: '/user/login',
+}, (req, res) => {
+    console.log(req)
+    res.send(req.user)
+}))
+
+//AUTHENTICATED
+
+router.get('/auth', (req, res) => {
+    res.send('you have been authenticated: ', req.user)
 })
-);
 
-router.get('/login', (req, res, next) => {
-    const form = '<h1>Login Page</h1><form method="POST" action="/login">\
-    Enter Username:<br><input type="text" name="username">\
-    <br>Enter Password:<br><input type="password" name="password">\
-    <br><br><input type="submit" value="Submit"></form>';
-    res.send(form)
+//FAIL TO AUTHENTICATE
+
+router.get('/login', (req, res) => {
+    res.send({ msg: "can't login" })
 })
 
-// router.get('/logout', auth, (req, res, next) => {
-//     req.logout();
-//     res.redirect('/login');
-// });
+// router.post('/logout', async (req, res) => {
 
-/*-------------------------------------------------------------- */
-/*-------------------------Emails------------------------------- */
+// })
 
-
+router.get('/all', async (req, res) => {
+    try {
+        const allUsers = await User.findAll();
+        res.send(allUsers);
+    } catch (err) {
+        console.log("Here be error all users: ", err.message)
+        res.send({ msg: err.message });
+    }
+})
 
 module.exports = router;

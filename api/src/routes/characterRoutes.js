@@ -1,20 +1,26 @@
 const router = require('express').Router();
-const { Character, Movie } = require('../db');
+const { Op } = require('sequelize');
+const { Character, Film } = require('../db');
 
 //*******************************************/
 //***************List**********************/
 //*******************************************/
 
+//ORDER CHARACTERS BY AGE WEIGHT OR ALPHABETICAL ORDER
+
 router.get('/', async (req, res) => {
-    const { name, age, weight, movies } = req.query;
+    const { name, age, weight, film } = req.query;
+
     try {
-        // FILTER BY NAME
+
+        // SEARCH NAME
+
         if (name) {
-            const findName = await Character.findOne({
-                where: { name: name },
+            var findName = await Character.findOne({
+                where: { name: { [Op.iLike]: `%${name}%` } },
                 include: {
-                    model: Movie,
-                    attributes: ['name'],
+                    model: Film,
+                    attributes: ['tittle'],
                     through: { attributes: [] }
                 }
             });
@@ -24,14 +30,28 @@ router.get('/', async (req, res) => {
             return res.send(findName);
         }
 
+        //FILTER BY FILM
+
+        if (film) {
+            var findByFilm = await Character.findAll({
+                include: {
+                    model: Film,
+                    where: { 'tittle': film },
+                    attributes: ['tittle']
+                }
+            })
+            return res.send(findByFilm);
+        }
+
+
         //FILTER BY AGE
 
         if (age) {
-            const findByAge = await Character.findAll({
+            var findByAge = await Character.findAll({
                 where: { age: age },
                 include: {
-                    model: Movie,
-                    attributes: ['name'],
+                    model: Film,
+                    attributes: ['tittle'],
                     through: { attributes: [] }
                 }
             })
@@ -44,11 +64,11 @@ router.get('/', async (req, res) => {
         //FILTER BY WEIGHT
 
         if (weight) {
-            const findByWeight = await Character.findAll({
+            var findByWeight = await Character.findAll({
                 where: { weight: weight },
                 include: {
-                    model: Movie,
-                    attributes: ['name'],
+                    model: Film,
+                    attributes: ['tittle'],
                     through: { attributes: [] }
                 }
             })
@@ -57,14 +77,17 @@ router.get('/', async (req, res) => {
             }
             return res.status(404).send({ msg: 'No characters with this weight.' });
         };
-        const allChar = await Character.findAll();
-        let listInfo = allChar.map(e => {
-            return f = {
-                name: e.name,
-                image: e.image
-            }
-        })
-        res.send(listInfo);
+
+        //LIST NAME AND IMAGE
+
+        var allChar = await Character.findAll({
+            attributes: ['name', 'image']
+        });
+        // if (order && order === "nameUp" || order === "nameDown") {
+        //     return res.send(manageOrder(order, allChar));
+        // }
+
+        res.send(allChar);
     } catch (err) {
         res.send({ msg: err.message });
     }
@@ -74,17 +97,40 @@ router.get('/', async (req, res) => {
 //***************Create**********************/
 //*******************************************/
 
+//asuming [films] is an array of strings and they 
+//have been selected from a list of already existing films.
+
 router.post('/', async (req, res) => {
-    const { name, age, weight, story, image, movie } = req.body;
-    let findMovie = await Movie.findOne({ where: { name: movie } })
-    let newCharacter = await Character.create({
-        name,
-        age,
-        weight,
-        story,
-        image
-    });
-    newCharacter.addMovie(findMovie);
+    const { name, age, weight, story, image, films } = req.body;
+
+    try {
+        if (!name || !films) return res.status(400).send({ msg: 'missing information' });
+        var lowerCaseName = name.toLowerCase().trim();
+        const exists = await Character.findOne({ where: { name: { [Op.iLike]: `%${lowerCaseName}%` } } });
+        if (!exists) {
+
+            if (!films.length) return res.status(400).send({ msg: 'the films are required to create the character' });
+            let newCharacter = await Character.create({
+                name: lowerCaseName,
+                age,
+                weight,
+                story,
+                image
+            });
+
+            for (var i = 0; i < films.length; i++) {
+                await Film.findOrCreate({ where: { tittle: films[i] } }); //JUST FOR TESTING PURPOSES.
+                let foundFilm = await Film.findOne({ where: { tittle: films[i] } })
+                newCharacter.addFilm(foundFilm)
+            }
+
+            return res.send({ msg: "Character created successfuly" });
+        }
+        res.status(400).send({ msg: `A character with the name ${lowerCaseName} already exists` });
+    } catch (err) {
+        console.log(err.message);
+        res.send({ msg: err.message });
+    }
 })
 
 //*******************************************/
@@ -99,8 +145,8 @@ router.get('/:id', async (req, res) => {
                 id: id
             },
             include: {
-                model: Movie,
-                attributes: ['name'],
+                model: Film,
+                attributes: ['tittle'],
                 through: { attributes: [] }
             }
         });
@@ -120,15 +166,18 @@ router.patch('/:id', async (req, res) => {
     const findChar = await Character.update({ where: { id: id } })
 
     if (findChar) {
-        const updateChar = await Character.update({
+        await Character.update({
             name: name ? name : findChar.name,
             age: age ? age : findChar.age,
             weight: age ? weight : findChar.weight,
-            story: age ? story : findChar.story
+            story: age ? story : findChar.story,
+            imgage: image ? image : findChar.image
         }, { where: { id: id } });
-    } else return res.status(404).send({ msg: `The character id: ${id}, doesn't exist.` });
 
-    res.send({ msg: "Character Updated successfully" })
+        return res.send({ msg: "Character Updated successfully" })
+    }
+    res.status(404).send({ msg: `The character id: ${id}, doesn't exist.` });
+
 
 })
 
@@ -139,8 +188,10 @@ router.patch('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        await Character.destroy({ where: { id: id } });
-        res.send({ msg: `Character id: ${id}, deleted successfully` });
+        const destroy = await Character.destroy({ where: { id: id } });
+        if (destroy) return res.send({ msg: `Character id: ${id}, deleted successfully` });
+
+        res.status(404).send({ msg: `Character id: ${id}, coudn't be found` })
     } catch (err) {
         res.send({ msg: err.message });
     }

@@ -16,14 +16,6 @@ server.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 server.use(bodyParser.json({ limit: '50mb' }));
 server.use(cookieParser());
 server.use(morgan('dev'));
-server.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
-  next();
-});
-
 server.use(session({
   secret: 'secret',
   resave: false,
@@ -34,12 +26,22 @@ server.use(passport.initialize())
 server.use(passport.session())
 
 server.use((req, res, next) => {
-  console.log(req, "NO SOY NELSON");
-  // console.log(req.session)
-  // console.log('soy user', req.User)
+  // console.log(req, "nyet");
+  console.log(req.session)
+  console.log('soy user', req.user)
   next()
 
 })
+
+server.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+  next();
+});
+
+
 
 server.use('/', routes);
 
