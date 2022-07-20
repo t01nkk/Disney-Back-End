@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const { Op } = require('sequelize');
 const { Character, Film } = require('../db');
+const { auth } = require('../passport/passwordUtils');
 
 //*******************************************/
 //***************List**********************/
@@ -8,7 +9,7 @@ const { Character, Film } = require('../db');
 
 //ORDER CHARACTERS BY AGE WEIGHT OR ALPHABETICAL ORDER
 
-router.get('/', async (req, res) => {
+router.get('/', auth, async (req, res) => {
     const { name, age, weight, film } = req.query;
 
     try {
@@ -100,7 +101,7 @@ router.get('/', async (req, res) => {
 //asuming [films] is an array of strings and they 
 //have been selected from a list of already existing films.
 
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
     const { name, age, weight, story, image, films } = req.body;
 
     try {
@@ -137,7 +138,7 @@ router.post('/', async (req, res) => {
 //***************Details(read)***************/
 //*******************************************/
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', auth, async (req, res) => {
     try {
         const { id } = req.params
         const findChar = await Character.findOne({
@@ -160,7 +161,7 @@ router.get('/:id', async (req, res) => {
 //***************Update**********************/
 //*******************************************/
 
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', auth, async (req, res) => {
     const { id } = req.params
     const { name, age, weight, story, image } = req.body;
     const findChar = await Character.update({ where: { id: id } })
@@ -185,7 +186,7 @@ router.patch('/:id', async (req, res) => {
 //***************Delete**********************/
 //*******************************************/
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
     try {
         const { id } = req.params;
         const destroy = await Character.destroy({ where: { id: id } });

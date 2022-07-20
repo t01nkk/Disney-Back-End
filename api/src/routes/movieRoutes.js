@@ -1,12 +1,12 @@
 const router = require('express').Router();
-const { reset } = require('nodemon');
-const { Op, ValidationError } = require('sequelize');
-const { Character, Film, Genre } = require('../db');
-const { validateDate } = require('../Middlewares/middleware')
+const { Op } = require('sequelize');
+const { Film, Genre } = require('../db');
+const { validateDate } = require('../helpers/helpers');
+const { auth } = require('../passport/passwordUtils');
 
 //LIST, FILTER AND ORDERS
 
-router.get('/', async (req, res) => {
+router.get('/', auth, async (req, res) => {
     const { name, idGenere, order } = req.query;
 
     try {
@@ -76,7 +76,7 @@ router.get('/', async (req, res) => {
 // ○ Título.
 // ○ Fecha de creación.
 // ○ Calificación (del 1 al 5).
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
     const { tittle, date, rating, genre } = req.body;
     try {
         if (!tittle) return res.status(400).send({ msg: 'Tittle is required' });
@@ -102,7 +102,7 @@ router.post('/', async (req, res) => {
 //***************Details(read)***************/
 //*******************************************/
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', auth, async (req, res) => {
     try {
         const { id } = req.params;
         const findFilm = await Film.findByPk({
@@ -126,7 +126,7 @@ router.get('/:id', async (req, res) => {
 //***************Update**********************/
 //*******************************************/
 
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', auth, async (req, res) => {
     try {
         const { id, tittle, img, date, rating } = req.params;
         const find = await Film.findByPk(id);
@@ -148,7 +148,7 @@ router.patch('/:id', async (req, res) => {
 //***************Delete**********************/
 //*******************************************/
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
     try {
         const { id } = req.params;
         const destroy = await Film.destroy({ where: { id: id } });

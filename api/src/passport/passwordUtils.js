@@ -22,7 +22,7 @@ function auth(req, res, next) {
 }
 
 function notAuth(req, res, next) {
-    console.log("Not Authenticated: ", req.isAuthenticated());
+    console.log("Authenticated: ", req.isAuthenticated());
     return !req.isAuthenticated() ? next() : res.send({ msg: 'You are still logged in' });
 }
 module.exports = {

@@ -2,14 +2,14 @@ const { Router } = require('express');
 const router = Router();
 const passport = require('passport');
 const { notAuth, auth, genPassword, validatePassword } = require('../passport/passwordUtils')
-const { validateEmail } = require('../Middlewares/middleware');
+const { validateEmail } = require('../helpers/helpers');
 const { User } = require('../db');
 
 // router.get('/register', async (req, res) => {
 
 // })
 
-router.post('/register', async (req, res) => {
+router.post('/register', notAuth, async (req, res) => {
     try {
         const { password, email } = req.body;
         if (!validateEmail(email)) return res.status(404).send('Invalid email format');
@@ -26,28 +26,27 @@ router.post('/register', async (req, res) => {
     }
 })
 
-router.post('/login', passport.authenticate('local', {
-    failureRedirect: '/user/login',
-}, (req, res) => {
-    console.log(req)
-    res.send(req.user)
+
+
+router.post('/login', notAuth, passport.authenticate('local', {
+    failureMessage: true,
+    failureRedirect: '/user/fail',
+    successRedirect: '/user/auth'
 }))
 
 //AUTHENTICATED
 
-router.get('/auth', (req, res) => {
-    res.send('you have been authenticated: ', req.user)
+router.get('/auth', auth, (req, res) => {
+    res.send('Authenticated succesfully!')
 })
 
 //FAIL TO AUTHENTICATE
 
-router.get('/login', (req, res) => {
-    res.send({ msg: "can't login" })
+router.get('/fail', notAuth, (req, res) => res.send({ msg: "Something went wrong" }));
+
+router.delete('/logout', auth, async (req, res) => {
+    req.logOut((err) => err ? err : res.send({ msg: 'See ya!' }));
 })
-
-// router.post('/logout', async (req, res) => {
-
-// })
 
 router.get('/all', async (req, res) => {
     try {

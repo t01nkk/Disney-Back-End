@@ -21,14 +21,11 @@ server.use(session({
   resave: false,
   saveUninitialized: true,
 }))
-require('./passport/auth');
+require('./passport/auth')
 server.use(passport.initialize())
 server.use(passport.session())
 
 server.use((req, res, next) => {
-  // console.log(req, "nyet");
-  console.log(req.session)
-  console.log('soy user', req.user)
   next()
 
 })
