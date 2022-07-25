@@ -1,52 +1,10 @@
 const { Router } = require('express');
 const router = Router();
-const passport = require('passport');
-const { notAuth, auth, genPassword, validatePassword } = require('../passport/passwordUtils')
+const { genPassword, validatePassword } = require('../passport/passwordUtils')
 const { validateEmail } = require('../helpers/helpers');
 const { User } = require('../db');
-
-// router.get('/register', async (req, res) => {
-
-// })
-
-router.post('/register', notAuth, async (req, res) => {
-    try {
-        const { password, email } = req.body;
-        if (!validateEmail(email)) return res.status(404).send('Invalid email format');
-        if (!validatePassword(password)) return res.status(400).send({ msg: 'Invalid password format (4-8 char, 1 upperCase, 1 number)' })
-        const hashPass = genPassword(password)
-        await User.create({
-            email: email,
-            password: hashPass
-        })
-        res.send({ msg: 'User registered successfully' })
-    } catch (err) {
-        console.log('Here be error: ', err.message)
-        res.send({ msg: err.message })
-    }
-})
-
-
-
-router.post('/login', notAuth, passport.authenticate('local', {
-    failureMessage: true,
-    failureRedirect: '/user/fail',
-    successRedirect: '/user/auth'
-}))
-
-//AUTHENTICATED
-
-router.get('/auth', auth, (req, res) => {
-    res.send('Authenticated succesfully!')
-})
-
-//FAIL TO AUTHENTICATE
-
-router.get('/fail', notAuth, (req, res) => res.send({ msg: "Something went wrong" }));
-
-router.delete('/logout', auth, async (req, res) => {
-    req.logOut((err) => err ? err : res.send({ msg: 'See ya!' }));
-})
+const bcrypt = require('bcrypt');
+const jwt = require("jsonwebtoken");
 
 router.get('/all', async (req, res) => {
     try {
@@ -57,5 +15,68 @@ router.get('/all', async (req, res) => {
         res.send({ msg: err.message });
     }
 })
+
+router.post('/register', async (req, res) => {
+    try {
+        const { password, email } = req.body;
+        const exists = await User.findOne({ where: { email: email } });
+        if (exists) return res.status(401).send({
+            success: false,
+            message: 'This email is already registered'
+        });
+
+        if (!validateEmail(email)) return res.status(400).send({
+            success: false,
+            message: 'Invalid email format'
+        });
+        if (!validatePassword(password)) return res.status(400).send({
+            success: false,
+            message: 'Invalid password format (4-8 char, 1 upperCase, 1 number)'
+        })
+        const hashPass = genPassword(password)
+        await User.create({
+            email: email,
+            password: hashPass
+        })
+        res.send({
+            success: true,
+            message: 'User registered successfully',
+            user: email
+        })
+    } catch (err) {
+        console.log('Here be error: ', err.message)
+        res.send({ message: err.message })
+    }
+})
+
+router.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+    const user = await User.findOne({ where: { email: email } });
+    if (!user) {
+        return res.status(401).send({
+            success: false,
+            message: "Invalid Email"
+        })
+    }
+    if (!await bcrypt.compare(password, user.password)) {
+        return res.status(401).send({
+            success: false,
+            message: "Invalid Password"
+        })
+    }
+    payload = {
+        email: user.email,
+        id: user._id
+    }
+    const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "1d" })
+    console.log(req.user)
+    res.send({
+        success: true,
+        message: "Login successfull",
+        token: "Bearer " + token
+    })
+
+})
+
 
 module.exports = router;

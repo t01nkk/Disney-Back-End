@@ -3,7 +3,7 @@ const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const routes = require('./routes/index.js');
-const session = require('express-session');
+// const session = require('express-session');
 const passport = require('passport');
 
 require('./db.js');
@@ -16,14 +16,14 @@ server.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 server.use(bodyParser.json({ limit: '50mb' }));
 server.use(cookieParser());
 server.use(morgan('dev'));
-server.use(session({
-  secret: 'secret',
-  resave: false,
-  saveUninitialized: true,
-}))
+// server.use(session({
+//   secret: 'secret',
+//   resave: false,
+//   saveUninitialized: true,
+// }))
 require('./passport/auth')
 server.use(passport.initialize())
-server.use(passport.session())
+// server.use(passport.session())
 
 server.use((req, res, next) => {
   next()

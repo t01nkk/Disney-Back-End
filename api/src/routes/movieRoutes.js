@@ -2,11 +2,11 @@ const router = require('express').Router();
 const { Op } = require('sequelize');
 const { Film, Genre } = require('../db');
 const { validateDate } = require('../helpers/helpers');
-const { auth } = require('../passport/passwordUtils');
+const passport = require('passport');
 
 //LIST, FILTER AND ORDERS
 
-router.get('/', auth, async (req, res) => {
+router.get('/', async (req, res) => {
     const { name, idGenere, order } = req.query;
 
     try {
@@ -72,11 +72,8 @@ router.get('/', auth, async (req, res) => {
 //*******************************************/
 //***************Create**********************/
 //*******************************************/
-// Imagen.
-// ○ Título.
-// ○ Fecha de creación.
-// ○ Calificación (del 1 al 5).
-router.post('/', auth, async (req, res) => {
+
+router.post('/', passport.authenticate('jwt', { session: false }), async (req, res) => {
     const { tittle, date, rating, genre } = req.body;
     try {
         if (!tittle) return res.status(400).send({ msg: 'Tittle is required' });
@@ -102,7 +99,7 @@ router.post('/', auth, async (req, res) => {
 //***************Details(read)***************/
 //*******************************************/
 
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const findFilm = await Film.findByPk({
@@ -126,7 +123,7 @@ router.get('/:id', auth, async (req, res) => {
 //***************Update**********************/
 //*******************************************/
 
-router.patch('/:id', auth, async (req, res) => {
+router.patch('/:id', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
         const { id, tittle, img, date, rating } = req.params;
         const find = await Film.findByPk(id);
@@ -148,7 +145,7 @@ router.patch('/:id', auth, async (req, res) => {
 //***************Delete**********************/
 //*******************************************/
 
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
         const { id } = req.params;
         const destroy = await Film.destroy({ where: { id: id } });

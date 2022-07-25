@@ -1,38 +1,21 @@
-const LocalStrategy = require('passport-local').Strategy
-const passport = require('passport');
 const { User } = require('../db');
-const bcrypt = require('bcrypt');
+const passport = require('passport');
+const JwtStrategy = require('passport-jwt').Strategy,
+    ExtractJwt = require('passport-jwt').ExtractJwt;
+var opts = {}
+opts.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
+opts.secretOrKey = process.env.ACCESS_TOKEN_SECRET;
 
-
-const authenticateUser = async (email, password, done) => {
+passport.use(new JwtStrategy(opts, async function (jwt_payload, done) {
     try {
-        const user = await User.findOne({ where: { email: email } })
-
-        if (!user) return done(null, false, { message: "No user with that email" });
-        if (await bcrypt.compare(password, user.password)) {
+        const user = await User.findOne({ where: { _id: jwt_payload.id } });
+        if (user) {
             return done(null, user);
-        } else return done(null, false, { message: "Password incorrect." })
+        } else {
+            return done(null, false, { message: 'This user does not exist' });
+        }
     } catch (err) {
-        return done(e);
+        return done(err, false);
     }
-
-}
-passport.use(new LocalStrategy({ usernameField: 'email' }, authenticateUser))
-
-passport.serializeUser((user, done) => {
-    // console.log('serializeUser', user) //usuario logueado
-    // console.log('soy userid', user.id) //id hgenerado en la tabla
-    done(null, user.id)
-})
-
-passport.deserializeUser(async (id, done) => {
-    // console.log('soy userid deserialise', id) // recive id de la sesion 
-    try {
-        const UserId = await User.findByPk(id); // lo busacamos en la base de datos
-        // console.log('soy userid deserialise base', UserId)
-        done(null, UserId) // devolvemos el usuario
-    } catch (err) {
-        done(err)
-    }
-})
+}));
 

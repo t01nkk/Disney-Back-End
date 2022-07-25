@@ -2,14 +2,13 @@ const router = require('express').Router();
 const { Op } = require('sequelize');
 const { Character, Film } = require('../db');
 const { auth } = require('../passport/passwordUtils');
+const passport = require('passport');
 
 //*******************************************/
 //***************List**********************/
 //*******************************************/
 
-//ORDER CHARACTERS BY AGE WEIGHT OR ALPHABETICAL ORDER
-
-router.get('/', auth, async (req, res) => {
+router.get('/', async (req, res) => {
     const { name, age, weight, film } = req.query;
 
     try {
@@ -43,7 +42,6 @@ router.get('/', auth, async (req, res) => {
             })
             return res.send(findByFilm);
         }
-
 
         //FILTER BY AGE
 
@@ -84,9 +82,6 @@ router.get('/', auth, async (req, res) => {
         var allChar = await Character.findAll({
             attributes: ['name', 'image']
         });
-        // if (order && order === "nameUp" || order === "nameDown") {
-        //     return res.send(manageOrder(order, allChar));
-        // }
 
         res.send(allChar);
     } catch (err) {
@@ -101,7 +96,7 @@ router.get('/', auth, async (req, res) => {
 //asuming [films] is an array of strings and they 
 //have been selected from a list of already existing films.
 
-router.post('/', auth, async (req, res) => {
+router.post('/', passport.authenticate('jwt', { session: false }), async (req, res) => {
     const { name, age, weight, story, image, films } = req.body;
 
     try {
@@ -138,7 +133,7 @@ router.post('/', auth, async (req, res) => {
 //***************Details(read)***************/
 //*******************************************/
 
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', async (req, res) => {
     try {
         const { id } = req.params
         const findChar = await Character.findOne({
@@ -161,7 +156,7 @@ router.get('/:id', auth, async (req, res) => {
 //***************Update**********************/
 //*******************************************/
 
-router.patch('/:id', auth, async (req, res) => {
+router.patch('/:id', passport.authenticate('jwt', { session: false }), async (req, res) => {
     const { id } = req.params
     const { name, age, weight, story, image } = req.body;
     const findChar = await Character.update({ where: { id: id } })
@@ -186,7 +181,7 @@ router.patch('/:id', auth, async (req, res) => {
 //***************Delete**********************/
 //*******************************************/
 
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
         const { id } = req.params;
         const destroy = await Character.destroy({ where: { id: id } });
