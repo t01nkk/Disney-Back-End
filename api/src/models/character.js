@@ -27,5 +27,3 @@ module.exports = (sequelize) => {
         timestamps: false
     });
 };
-
-// ○ Películas o series asociadas.
