@@ -6,16 +6,6 @@ const { User } = require('../db');
 const bcrypt = require('bcrypt');
 const jwt = require("jsonwebtoken");
 
-router.get('/all', async (req, res) => {
-    try {
-        const allUsers = await User.findAll();
-        res.send(allUsers);
-    } catch (err) {
-        console.log("Here be error all users: ", err.message)
-        res.send({ msg: err.message });
-    }
-})
-
 router.post('/register', async (req, res) => {
     try {
         const { password, email } = req.body;
@@ -72,7 +62,7 @@ router.post('/login', async (req, res) => {
     console.log(req.user)
     res.send({
         success: true,
-        message: "Login successfull",
+        message: "Login successful",
         token: "Bearer " + token
     })
 

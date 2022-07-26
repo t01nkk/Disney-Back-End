@@ -25,7 +25,9 @@ router.get('/', async (req, res) => {
                 }
             });
             if (!findName) {
-                return res.status(404).send({ msg: `The character name: ${name}, doesn't exist.` });
+                return res.status(404).send({
+                    message: `The character name: ${name}, doesn't exist.`
+                });
             }
             return res.send(findName);
         }
@@ -57,7 +59,9 @@ router.get('/', async (req, res) => {
             if (findByAge.length) {
                 return res.send(findByAge);
             }
-            return res.status(404).send({ msg: 'No characters with this age.' });
+            return res.status(404).send({
+                message: 'No characters with this age.'
+            });
         }
 
         //FILTER BY WEIGHT
@@ -74,7 +78,9 @@ router.get('/', async (req, res) => {
             if (findByWeight.length) {
                 return res.send(findByWeight);
             }
-            return res.status(404).send({ msg: 'No characters with this weight.' });
+            return res.status(404).send({
+                message: 'No characters with this weight.'
+            });
         };
 
         //LIST NAME AND IMAGE
@@ -83,9 +89,16 @@ router.get('/', async (req, res) => {
             attributes: ['name', 'image']
         });
 
-        res.send(allChar);
+        if (allChar.length) return res.send(allChar);
+
+        res.send({
+            message: 'No characters have been created so far!'
+        })
+
     } catch (err) {
-        res.send({ msg: err.message });
+        res.send({
+            message: err.message
+        });
     }
 })
 
@@ -96,38 +109,50 @@ router.get('/', async (req, res) => {
 //asuming [films] is an array of strings and they 
 //have been selected from a list of already existing films.
 
-router.post('/', passport.authenticate('jwt', { session: false }), async (req, res) => {
-    const { name, age, weight, story, image, films } = req.body;
+router.post('/',
+    passport.authenticate('jwt', { session: false }),
+    async (req, res) => {
+        const { name, age, weight, story, image, films } = req.body;
 
-    try {
-        if (!name || !films) return res.status(400).send({ msg: 'missing information' });
-        var lowerCaseName = name.toLowerCase().trim();
-        const exists = await Character.findOne({ where: { name: { [Op.iLike]: `%${lowerCaseName}%` } } });
-        if (!exists) {
-
-            if (!films.length) return res.status(400).send({ msg: 'the films are required to create the character' });
-            let newCharacter = await Character.create({
-                name: lowerCaseName,
-                age,
-                weight,
-                story,
-                image
+        try {
+            if (!name || !films) return res.status(400).send({
+                message: 'missing information'
             });
+            var lowerCaseName = name.toLowerCase().trim();
+            const exists = await Character.findOne({ where: { name: { [Op.iLike]: `%${lowerCaseName}%` } } });
+            if (!exists) {
 
-            for (var i = 0; i < films.length; i++) {
-                await Film.findOrCreate({ where: { tittle: films[i] } }); //JUST FOR TESTING PURPOSES.
-                let foundFilm = await Film.findOne({ where: { tittle: films[i] } })
-                newCharacter.addFilm(foundFilm)
+                if (!films.length) return res.status(400).send({
+                    message: 'the films are required to create the character'
+                });
+                let newCharacter = await Character.create({
+                    name: lowerCaseName,
+                    age,
+                    weight,
+                    story,
+                    image
+                });
+
+                for (var i = 0; i < films.length; i++) {
+                    await Film.findOrCreate({ where: { tittle: films[i] } }); //JUST FOR TESTING PURPOSES.
+                    let foundFilm = await Film.findOne({ where: { tittle: films[i] } })
+                    newCharacter.addFilm(foundFilm)
+                }
+
+                return res.send({
+                    message: "Character created successfuly"
+                });
             }
-
-            return res.send({ msg: "Character created successfuly" });
+            res.status(400).send({
+                message: `A character with the name ${lowerCaseName} already exists`
+            });
+        } catch (err) {
+            console.log(err.message);
+            res.send({
+                message: err.message
+            });
         }
-        res.status(400).send({ msg: `A character with the name ${lowerCaseName} already exists` });
-    } catch (err) {
-        console.log(err.message);
-        res.send({ msg: err.message });
-    }
-})
+    })
 
 //*******************************************/
 //***************Details(read)***************/
@@ -146,9 +171,16 @@ router.get('/:id', async (req, res) => {
                 through: { attributes: [] }
             }
         });
-        res.send(findChar)
+        if (findChar) {
+            return res.send(findChar)
+        }
+        res.status(404).send({
+            message: `Character id: ${id}, not found`
+        })
     } catch (err) {
-        res.send({ msg: err.message });
+        res.send({
+            message: err.message
+        });
     }
 })
 
@@ -156,42 +188,56 @@ router.get('/:id', async (req, res) => {
 //***************Update**********************/
 //*******************************************/
 
-router.patch('/:id', passport.authenticate('jwt', { session: false }), async (req, res) => {
-    const { id } = req.params
-    const { name, age, weight, story, image } = req.body;
-    const findChar = await Character.update({ where: { id: id } })
+router.put('/:id',
+    passport.authenticate('jwt', { session: false }),
+    async (req, res) => {
+        const { id } = req.params
+        const { name, age, weight, story, image } = req.body;
+        const findChar = await Character.findOne({ where: { id: id } })
 
-    if (findChar) {
-        await Character.update({
-            name: name ? name : findChar.name,
-            age: age ? age : findChar.age,
-            weight: age ? weight : findChar.weight,
-            story: age ? story : findChar.story,
-            imgage: image ? image : findChar.image
-        }, { where: { id: id } });
+        if (findChar) {
+            await Character.update({
+                name: name ? name : findChar.name,
+                age: age ? age : findChar.age,
+                weight: age ? weight : findChar.weight,
+                story: age ? story : findChar.story,
+                img: image ? image : findChar.image
+            }, { where: { id: id } });
 
-        return res.send({ msg: "Character Updated successfully" })
-    }
-    res.status(404).send({ msg: `The character id: ${id}, doesn't exist.` });
+            return res.send({
+                message: "Character Updated successfully"
+            })
+        }
+        res.status(404).send({
+            message: `The character id: ${id}, doesn't exist.`
+        });
 
 
-})
+    })
 
 //*******************************************/
 //***************Delete**********************/
 //*******************************************/
 
-router.delete('/:id', passport.authenticate('jwt', { session: false }), async (req, res) => {
-    try {
-        const { id } = req.params;
-        const destroy = await Character.destroy({ where: { id: id } });
-        if (destroy) return res.send({ msg: `Character id: ${id}, deleted successfully` });
+router.delete('/:id',
+    passport.authenticate('jwt', { session: false }),
+    async (req, res) => {
+        try {
+            const { id } = req.params;
+            const destroy = await Character.destroy({ where: { id: id } });
+            if (destroy) return res.send({
+                message: `Character id: ${id}, deleted successfully`
+            });
 
-        res.status(404).send({ msg: `Character id: ${id}, coudn't be found` })
-    } catch (err) {
-        res.send({ msg: err.message });
-    }
-})
+            res.status(404).send({
+                message: `Character id: ${id}, coudn't be found`
+            })
+        } catch (err) {
+            res.send({
+                message: err.message
+            });
+        }
+    })
 
 
 module.exports = router;
